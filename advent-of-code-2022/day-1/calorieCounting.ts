@@ -3,6 +3,8 @@ type ElfWithMostCaloriesProps = {
 	calories: null | number;
 };
 
+type CaloriesInput = string;
+
 const calories = `1000
 2000
 3000
@@ -21,7 +23,7 @@ const calories = `1000
 
 10000`;
 
-const findElfWithMostCalories = (calories: string) => {
+const findElfWithMostCalories = (calories: CaloriesInput) => {
 	const arrayCalories = calories.split('\n');
 	let elf = 1;
 	let elfWithMostCalories: ElfWithMostCaloriesProps = { elf: 1, calories: null };

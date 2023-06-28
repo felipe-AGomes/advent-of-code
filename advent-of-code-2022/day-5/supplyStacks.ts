@@ -49,12 +49,75 @@ The Elves just need to know which crate will end up on top of each stack; in thi
 
 After the rearrangement procedure completes, what crate ends up on top of each stack? */
 
-type StacksOfCratesInput = string;
-type RowOfStack = string;
-type ArrayRowOfStack = string[];
+// type StacksOfCratesInput = string;
+// type RowOfStack = string;
+// type ArrayRowOfStack = string[];
 
-const stacksOfCratesInput = 
-`    [D]    
+// const stacksOfCratesInput = `    [D]
+// [N] [C]
+// [Z] [M] [P]
+//  1   2   3
+
+// move 2 from 2 to 1`;
+
+// const separeteColumns = (rowOfStack: RowOfStack) => {
+// 	const newStack = rowOfStack.replace(/    /g, ' ');
+// 	return newStack.split(' ').map((crate) => crate.replace(/\[(.)\]/g, '$1'));
+// };
+
+// const removeString = (string: string) => {
+// 	return string.replace(/[a-zA-Z ]*/g, '').split('');
+// };
+
+// const showTopOfStacks = (stacks: StacksOfCratesInput) => {
+// 	const [allStaks, command] = stacks.split('\n\n');
+// 	const arrayRowOfStakcs = allStaks.split('\n').map(separeteColumns);
+// 	const arrayCommand = command.split('\n').map(removeString);
+// 	arrayRowOfStakcs.pop();
+
+// 	let result = [];
+
+// 	arrayCommand.forEach((command) => {
+// 		let quantidade = +command[0];
+// 		const de = +command[1] - 1;
+// 		const para = +command[2] - 1;
+
+// 		const a = arrayRowOfStakcs.map((rowStack) => {
+// 			let newRowStack = [];
+// 			if (rowStack[de] !== '' && quantidade > 0) {
+// 				arrayRowOfStakcs.forEach((rowStack) => {
+// 					if (rowStack[para] === '') {
+// 						rowStack[para] = rowStack[de];
+// 						rowStack[de] = '';
+// 						--quantidade;
+// 					}
+// 					newRowStack = [...rowStack];
+// 				});
+// 			}
+// 			return rowStack;
+// 		});
+
+// 	});
+
+// const topStacks = new Array(arrayRowOfStakcs.length);
+
+// arrayRowOfStakcs.forEach((rowOfStack) => {
+// 	rowOfStack.forEach((crate, index) => {
+// 		topStacks[index] =
+// 			crate !== '' && !topStacks[index] ? crate : topStacks[index];
+// 	});
+// });
+
+// return { topStacks: topStacks.join('') };
+// };
+
+type CommandPrps = {
+	qnt: number;
+	from: number;
+	to: number;
+};
+
+const stacksOfCratesInput = `    [D]    
 [N] [C]    
 [Z] [M] [P]
  1   2   3 
@@ -62,26 +125,60 @@ const stacksOfCratesInput =
 move 1 from 2 to 1
 move 3 from 1 to 3
 move 2 from 2 to 1
-move 1 from 1 to 2
-`;
+move 1 from 1 to 2`;
 
-const separeteColumns = (rowOfStack: RowOfStack) => {
-	const newStack = rowOfStack.replace(/    /g, ' ');
-	return newStack.split(' ').map((crate) => crate.replace(/\[(.)\]/g, '$1'));
+const splitRow = (string: string) => {
+	return string.replace(/    /g, '*').replace(/ /g, '').split('');
 };
 
-const showTopOfStacks = (stacks: StacksOfCratesInput) => {
-	const arrayRowOfStakcs = stacks.split('\n').map(separeteColumns);
-	const topStacks = new Array(arrayRowOfStakcs.length);
+const separateInput = (stacksOfCratesInput: string) => {
+	const [stacksOfCratesAndColumns, commands] = stacksOfCratesInput.split('\n\n');
+	const arrayStacksOfCratesAndColumns = stacksOfCratesAndColumns
+		.replace(/\[(.)\]/g, '$1')
+		.split('\n');
 
-	arrayRowOfStakcs.forEach((rowOfStack) => {
-		rowOfStack.forEach((crate, index) => {
-			topStacks[index] =
-				crate !== '' && !topStacks[index] ? crate : topStacks[index];
+	const columns = arrayStacksOfCratesAndColumns[
+		arrayStacksOfCratesAndColumns.length - 1
+	].replace(/ /g, '');
+
+	const stacksOfCrates = arrayStacksOfCratesAndColumns
+		.filter((_, index) => index !== arrayStacksOfCratesAndColumns.length - 1)
+		.map(splitRow);
+
+	const newCommands = commands.split('\n').map((command): CommandPrps => {
+		const result = command
+			.replace(/[a-z]*/g, '')
+			.replace(/ /g, '')
+			.split('');
+		return { qnt: +result[0], from: +result[1] - 1, to: +result[2] - 1 };
+	});
+
+	let allStacks = Array<string[]>(columns.length)
+		.fill([])
+		.map<string[]>(() => []);
+
+	stacksOfCrates.forEach((stack) => {
+		stack.forEach((crate, index) => {
+			allStacks[index].push(crate);
 		});
 	});
 
-	return { topStacks: topStacks.join('') };
+	const newStacks = allStacks.map((stack) =>
+		stack.filter((crate) => crate !== '*'),
+	);
+	return { allStacks: newStacks, columns, commands: newCommands };
 };
 
-console.log(showTopOfStacks(stacksOfCratesInput));
+const moveCrates = (commands: CommandPrps[], allStacks: string[][]) => {
+	commands.forEach(({ qnt, from, to }) => {
+		while (qnt > 0) {
+			allStacks[to].unshift(allStacks[from].shift());
+			qnt -= 1;
+		}
+	});
+	return { allStacks };
+};
+
+const { commands, allStacks } = separateInput(stacksOfCratesInput);
+
+console.log(moveCrates(commands, allStacks));

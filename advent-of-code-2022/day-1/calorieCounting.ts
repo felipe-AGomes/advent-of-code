@@ -2295,11 +2295,7 @@ const sumOfThreeMost = ({
 	secondElf,
 	thirdElf,
 }: ElfWithMostCaloriesProps) => {
-	const calories = [
-		firstElf.calories,
-		secondElf.calories,
-		thirdElf.calories,
-	];
+	const calories = [firstElf.calories, secondElf.calories, thirdElf.calories];
 	return calories.reduce((total, elf) => total + elf, 0);
 };
 
@@ -2347,4 +2343,3 @@ const findElfWithMostCalories = (calories: CaloriesInput) => {
 
 const elfWithMostCalories = findElfWithMostCalories(calories);
 console.log(elfWithMostCalories);
-// console.log(`sum of the three Elfs with most calories ${elfWithMostCalories}`);

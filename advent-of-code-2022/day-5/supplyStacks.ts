@@ -676,10 +676,9 @@ const separateInput = (stacksOfCratesInput: string) => {
 
 const moveCrates = (commands: CommandPrps[], allStacks: string[][]) => {
 	commands.forEach(({ qnt, from, to }) => {
-		while (qnt > 0 && allStacks[from]) {
-			allStacks[to].unshift(allStacks[from].shift());
-			qnt -= 1;
-		}
+		const removedFromStack = allStacks[from].slice(0, qnt);
+		allStacks[from] = allStacks[from].slice(qnt);
+		allStacks[to].unshift(...removedFromStack);
 	});
 	return allStacks;
 };

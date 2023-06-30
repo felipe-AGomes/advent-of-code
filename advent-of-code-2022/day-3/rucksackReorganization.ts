@@ -34,6 +34,20 @@ type RucksacksObj = {
 	leftSide: string;
 	rightSide: string;
 };
+type BadgesItemsProps = {
+	badge: string;
+	value: number;
+};
+type GroupBadgeProps = {
+	[key: string]: {
+		badge: string;
+		value: number;
+	};
+};
+type HighestValuesOfEachGroup = {
+	group: number;
+	item: string;
+};
 
 const rucksacksInput = `vGFhvGvvSdfwqhqvmCPnlFPnCNPcCFcWcr
 ZbWZDMgsTHsrNNLJcJnsJl
@@ -352,25 +366,93 @@ const checkEquality = ({ leftSide, rightSide }: RucksacksObj) => {
 	return equals;
 };
 
+const stringToValueCharCode = (sum: number, char: string) => {
+	const charCode = char.charCodeAt(0);
+	return sum + (charCode > 96 ? charCode - 96 : charCode - 38);
+};
+
 const sumValuePriority = (string: string) => {
-	return [...string].reduce((sum, char) => {
-		const charCode = char.charCodeAt(0);
-		return sum + (charCode > 96 ? charCode - 96 : charCode - 38);
-	}, 0);
+	return [...string].reduce(stringToValueCharCode, 0);
+};
+
+const separateGroupOfThree = (array: string[]) => {
+	let groupOfThree = [];
+	const arrayGroupOfThree: string[][] = [];
+	let count = 0;
+	array.forEach((rucksack, index) => {
+		if (index === array.length - 1) {
+			groupOfThree.push(rucksack);
+			arrayGroupOfThree.push(groupOfThree);
+		} else if (count >= 3) {
+			arrayGroupOfThree.push(groupOfThree);
+			groupOfThree = [rucksack];
+			count = 1;
+		} else {
+			groupOfThree.push(rucksack);
+			count++;
+		}
+	});
+
+	return arrayGroupOfThree;
+};
+
+const highestValuesOfEachGroup = (
+	group: string[],
+	groupIndex: number,
+): HighestValuesOfEachGroup => {
+	{
+		const groupItems = [];
+
+		group.forEach((rucksack) => {
+			const items = [];
+
+			for (let i = 0; i < rucksack.length; i++) {
+				const item = rucksack[i];
+
+				if (!items.includes(item)) {
+					items.push(item);
+				}
+			}
+			items.forEach((item) => {
+				const groupItem = groupItems.find((groupItem) => groupItem.item === item);
+
+				if (groupItem) {
+					groupItem.value++;
+				} else {
+					groupItems.push({ item, value: 1 });
+				}
+			});
+		});
+		const highestValue = groupItems.reduce(
+			(acc, item) => {
+				return item.value > acc.value
+					? { item: item.item, value: item.value }
+					: acc;
+			},
+			{ item: '', value: 0 },
+		);
+
+		return { group: groupIndex, item: highestValue.item };
+	}
 };
 
 const sumPrioritiesItemTypes = (rucksacksInput: RuckSacksInput) => {
-	let sumPrioritiesItemTypes = 0;
 	const arrayRucksacks = rucksacksInput.split('\n');
-
+	const arrayGroupOfThree = separateGroupOfThree(arrayRucksacks);
 	const divideArrayRucksacks = arrayRucksacks.map(divideString);
 
-	divideArrayRucksacks.forEach((rucksack) => {
-		const equals = checkEquality(rucksack);
-		sumPrioritiesItemTypes += sumValuePriority(equals);
-	});
+	const highestValues = arrayGroupOfThree.map(highestValuesOfEachGroup);
+	const sumOfGroup = highestValues.reduce(
+		(acc, item) => stringToValueCharCode(acc, item.item),
+		0,
+	);
 
-	return { sumPrioritiesItemTypes };
+	const sumPrioritiesItemTypes = divideArrayRucksacks.reduce(
+		(acc, rucksack) => acc + sumValuePriority(checkEquality(rucksack)),
+		0,
+	);
+
+	return { sumPrioritiesItemTypes, sumOfGroup };
 };
 
 console.log(sumPrioritiesItemTypes(rucksacksInput));

@@ -1,17 +1,15 @@
-type File = {
-	size: number;
-	name: string;
-};
+/* --- Day 7: No Space Left On Device ---
+You can hear birds chirping and raindrops hitting leaves as the expedition proceeds. Occasionally, you can even hear much louder sounds in the distance; how big do the animals get out here, anyway?
 
-type Diretories = {
-	[key: string]: {
-		size: number;
-		files: File[];
-		dir: Diretories[];
-	};
-};
+The device the Elves gave you has problems with more than just its communication system. You try to run a system update:
 
-export const input = `$ cd /
+$ system-update --please --pretty-please-with-sugar-on-top
+Error: No space left on device
+Perhaps you can delete some files to make space for the update?
+
+You browse around the filesystem to assess the situation and save the resulting terminal output (your puzzle input). For example:
+
+$ cd /
 $ ls
 dir a
 14848514 b.txt
@@ -33,83 +31,246 @@ $ ls
 4060174 j
 8033020 d.log
 5626152 d.ext
-7214296 k`;
+7214296 k
+The filesystem consists of a tree of files (plain data) and directories (which can contain other directories or files). The outermost directory is called /. You can navigate around the filesystem, moving into or out of directories and listing the contents of the directory you're currently in.
 
-const commands = input.split('\n');
+Within the terminal output, lines that begin with $ are commands you executed, very much like some modern computers:
 
-const checkCurrentDir = (command: string, currentDir: string, previousDir: string[]) => {
-	const checkNewDir = command.includes('$ cd')
-			? command.split('cd ')[1]
-			: currentDir;
+cd means change directory. This changes which directory is the current directory, but the specific result depends on the argument:
+cd x moves in one level: it looks in the current directory for the directory named x and makes it the current directory.
+cd .. moves out one level: it finds the directory that contains the current directory, then makes that directory the current directory.
+cd / switches the current directory to the outermost directory, /.
+ls means list. It prints out all of the files and directories immediately contained by the current directory:
+123 abc means that the current directory contains a file named abc with size 123.
+dir xyz means that the current directory contains a directory named xyz.
+Given the commands and output in the example above, you can determine that the filesystem looks visually like this:
 
-		if (checkNewDir === '..') {
-			previousDir.pop()
-			currentDir = previousDir[previousDir.length - 1];
-		} else if (checkNewDir !== currentDir && currentDir) {
-			previousDir.push(checkNewDir);
-			currentDir = checkNewDir;
-		} else {
-			currentDir = checkNewDir;
-		}
+- / (dir)
+  - a (dir)
+    - e (dir)
+      - i (file, size=584)
+    - f (file, size=29116)
+    - g (file, size=2557)
+    - h.lst (file, size=62596)
+  - b.txt (file, size=14848514)
+  - c.dat (file, size=8504156)
+  - d (dir)
+    - j (file, size=4060174)
+    - d.log (file, size=8033020)
+    - d.ext (file, size=5626152)
+    - k (file, size=7214296)
+Here, there are four directories: / (the outermost directory), a and d (which are in /), and e (which is in a). These directories also contain files of various sizes.
 
-		if (previousDir.length === 0) {
-			previousDir.push(currentDir);
-		}
-	return currentDir
+Since the disk is full, your first step should probably be to find directories that are good candidates for deletion. To do this, you need to determine the total size of each directory. The total size of a directory is the sum of the sizes of the files it contains, directly or indirectly. (Directories themselves do not count as having any intrinsic size.)
+
+The total sizes of the directories above can be found as follows:
+
+The total size of directory e is 584 because it contains a single file i of size 584 and no other directories.
+The directory a has total size 94853 because it contains files f (size 29116), g (size 2557), and h.lst (size 62596), plus file i indirectly (a contains e which contains i).
+Directory d has total size 24933642.
+As the outermost directory, / contains every file. Its total size is 48381165, the sum of the size of every file.
+To begin, find all of the directories with a total size of at most 100000, then calculate the sum of their total sizes. In the example above, these directories are a and e; the sum of their total sizes is 95437 (94853 + 584). (As in this example, this process can count files more than once!)
+
+Find all of the directories with a total size of at most 100000. What is the sum of the total sizes of those directories? */
+
+const input = `$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k
+dir caralhoFilhoDaPuta`;
+
+export type File = {
+	name: string;
+	size: number;
 };
 
-const resolveCommands = (commands: string[]) => {
-	let diretories: Diretories = {};
-	let previousDir: string[] = [];
-	let currentDir = '';
-	commands.forEach((command) => {
-		currentDir = checkCurrentDir(command, currentDir, previousDir)
+type Directory = {
+	files?: File[];
+	dirs?: Directory;
+	size?: number;
+};
 
-		const fileOrDir = command.match(/(\d)/)
-			? 'files'
-			: command.startsWith('dir') && 'dir';
+type DirectoriesNoTree = {
+	name: string;
+	files: File[];
+	dirs: string[];
+	size: number;
+};
 
-		if (currentDir && !diretories[currentDir]) {
-			diretories[currentDir] = {
-				size: 0,
-				files: [],
-				dir: [],
+type ArrayDirectories = {
+	directories: DirectoriesNoTree[];
+	location: string[];
+};
+
+const lines = input.split('\n');
+
+const arrayDirectories: DirectoriesNoTree[] = lines
+	.reduce(
+		({ directories, location }: ArrayDirectories, line) => {
+			const currentDir = location[location.length - 1];
+
+			const doNothing = () => ({ directories, location });
+
+			const addFile = (line: string) => {
+				const [size, name] = line.split(' ');
+
+				const foundDirectory = directories.find(
+					(directory) => directory.name === currentDir,
+				);
+
+				if (
+					!foundDirectory ||
+					foundDirectory.files.find((dir) => dir.name === name)
+				) {
+					return { directories, location };
+				}
+
+				foundDirectory.files.push({ name, size: Number(size) });
+
+				return { directories, location };
 			};
-		}
-		if (!command.startsWith('$') && fileOrDir === 'files') {
-			const [size, name] = command.split(' ');
-			diretories[currentDir].files.push({ name, size: Number(size) });
-		}
 
-		if (!command.startsWith('$') && fileOrDir === 'dir') {
-			const [size, name] = command.split(' ');
-				diretories[currentDir].dir.push({ 'a': {size: 123, files: [], dir: []}});
-		}
+			const closeDir = () => {
+				const newLocation = location.slice(0, -1);
+
+				return { directories, location: newLocation };
+			};
+
+			const addSubDir = () => {
+				const dir = line.match(/dir (.+)/)[1];
+				const foundDirectory = directories.find(
+					(directory) => directory.name === currentDir,
+				);
+
+				if (!foundDirectory || foundDirectory.dirs.find((dir1) => dir1 === dir)) {
+					return { directories, location };
+				}
+
+				foundDirectory.dirs.push(dir);
+				return { directories, location };
+			};
+
+			const rootDir = () => {
+				const newLocation = '/';
+
+				const foundDirectory = directories.find(
+					(directory) => directory.name === newLocation,
+				);
+
+				if (!foundDirectory) {
+					directories.push({ name: newLocation, files: [], dirs: [], size: 0 });
+				}
+
+				return { directories, location: [newLocation] };
+			};
+
+			const changeCurrentDir = (line: string) => {
+				const newLocation = line.match(/\$ cd (.+)/)[1];
+
+				const foundDirectory = directories.find(
+					(directory) => directory.name === newLocation,
+				);
+
+				if (!foundDirectory) {
+					directories.push({ name: newLocation, files: [], dirs: [], size: 0 });
+				}
+
+				return { directories, location: [...location, newLocation] };
+			};
+
+			const commandMap = [
+				{ expression: /\d+/, function: addFile },
+				{ expression: /dir .+/, function: addSubDir },
+				{ expression: /\$ cd \.\./, function: closeDir },
+				{ expression: /\$ cd \//, function: rootDir },
+				{ expression: /\$ cd ./, function: changeCurrentDir },
+			];
+
+			const command =
+				commandMap.find(({ expression }) => expression.test(line))?.function ??
+				doNothing;
+
+			return command(line);
+		},
+		{
+			directories: [],
+			location: [],
+		},
+	)
+	.directories.map((directory) => {
+		directory.size = directory.files.reduce((acc, file) => acc + file.size, 0);
+		return directory;
 	});
-	console.log(diretories);
+
+const sumDirectories = (directories: string[], size: number) => {
+	if (directories.length === 0) {
+		return size;
+	}
+
+	const result = directories.reduce((acc, dir) => {
+		const currentDir: DirectoriesNoTree = arrayDirectories.find(
+			(directory) => directory.name === dir,
+		);
+
+		if (!currentDir) {
+			return acc;
+		}
+
+		return acc + sumDirectories(currentDir.dirs, currentDir.size);
+	}, size);
+	return result;
 };
 
-resolveCommands(commands);
+const treeDirectories = (directories: string[]) => {
+	if (directories.length === 0) {
+		return {};
+	}
+	const result = directories.reduce((newTree, dir) => {
+		const currentDir: DirectoriesNoTree = arrayDirectories.find(
+			(directory) => directory.name === dir,
+		);
 
-const objExample = {
-	'/': {
-		size: 123,
-		files: ['a.txt', 'b.txt'],
-		dir: [
-			{
-				a: {
-					size: 122,
-					files: ['c.txt, d.txt'],
-					dir: [{}],
-				},
+		if (!currentDir) {
+			return { ...newTree, [dir]: { files: [], dirs: [], size: 0 } };
+		}
+
+		const result = {
+			[currentDir.name]: {
+				files: [...currentDir.files],
+				dirs: treeDirectories(currentDir.dirs),
+				size: sumDirectories(currentDir.dirs, currentDir.size),
 			},
-			{
-				b: {
-					size: 125,
-					files: ['c.txt, d.txt'],
-					dir: [{}],
-				},
-			},
-		],
-	},
+		};
+		return { ...newTree, ...result };
+	}, {});
+	return result;
 };
+
+const rootDir = { ...arrayDirectories[0] };
+const tree: Directory = {};
+tree[rootDir.name] = {
+	files: [...rootDir.files],
+	dirs: treeDirectories(rootDir.dirs),
+	size: sumDirectories(rootDir.dirs, rootDir.size),
+};
+
+console.log(tree['/'].dirs['d']);

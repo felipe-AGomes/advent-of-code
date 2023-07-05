@@ -40,3 +40,6 @@ for (let i = 1; i < rows.length - 1; i++) {
 	teste += sides.row || sides.column ? 1 : 0;
 }
 console.log(teste + edgeSum);
+
+// verificar se a linha ou coluna não estão como falsy
+// dividir os sides em top, right, bottom e left

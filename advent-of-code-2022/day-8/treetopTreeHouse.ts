@@ -18,17 +18,22 @@ let teste = 0;
 for (let i = 1; i < rows.length - 1; i++) {
 	const row = [...rows[i]];
 	const sides = {
-		row: true,
-		column: true,
+		top: true,
+  right: true,
+  bottom: true'
+		left: true,
 	};
 	row.forEach((rowRootTree, rowRootIndex) => {
 		if (!(rowRootIndex === 0 || rowRootIndex === row.length - 1)) {
 			const column = [...columns[rowRootIndex]];
 			console.log(column);
 			column.forEach((columnTree, columnIndex) => {
-				if (columnIndex !== rowRootIndex) {
-					sides.column = columnTree < rowRootTree;
+				if (columnIndex < rowRootIndex && sides.top) {
+					sides.top = columnTree < rowRootTree;
 				}
+if (columnIndex > rowRootIndex && sides.bottom) {
+  sides.bottom = columnTree < rowRootTree
+}
 			});
 			row.forEach((rowTree, rowIndex) => {
 				if (rowIndex !== rowRootIndex) {

@@ -1058,6 +1058,7 @@ type Directory = {
 
 type DirectoriesNoTree = {
 	name: string;
+	path: string;
 	files: File[];
 	dirs: string[];
 	size: number;
@@ -1074,6 +1075,8 @@ const arrayDirectories: DirectoriesNoTree[] = lines
 	.reduce(
 		({ directories, location }: ArrayDirectories, line) => {
 			const currentDir = location[location.length - 1];
+			let path =
+				location.length === 1 ? location[0] : [...location].join('/').slice(1);
 
 			const doNothing = () => ({ directories, location });
 
@@ -1105,14 +1108,16 @@ const arrayDirectories: DirectoriesNoTree[] = lines
 			const addSubDir = () => {
 				const dir = line.match(/dir (.+)/)[1];
 				const foundDirectory = directories.find(
-					(directory) => directory.name === currentDir,
+					(directory) => directory.path === path,
 				);
 
 				if (!foundDirectory || foundDirectory.dirs.find((dir1) => dir1 === dir)) {
 					return { directories, location };
 				}
 
-				foundDirectory.dirs.push(dir);
+				foundDirectory.dirs.push(
+					path.length === 1 ? `${path}${dir}` : `${path}/${dir}`,
+				);
 				return { directories, location };
 			};
 
@@ -1120,11 +1125,17 @@ const arrayDirectories: DirectoriesNoTree[] = lines
 				const newLocation = '/';
 
 				const foundDirectory = directories.find(
-					(directory) => directory.name === newLocation,
+					(directory) => directory.path === newLocation,
 				);
 
 				if (!foundDirectory) {
-					directories.push({ name: newLocation, files: [], dirs: [], size: 0 });
+					directories.push({
+						name: newLocation,
+						files: [],
+						dirs: [],
+						path: newLocation,
+						size: 0,
+					});
 				}
 
 				return { directories, location: [newLocation] };
@@ -1138,7 +1149,14 @@ const arrayDirectories: DirectoriesNoTree[] = lines
 				);
 
 				if (!foundDirectory) {
-					directories.push({ name: newLocation, files: [], dirs: [], size: 0 });
+					directories.push({
+						name: newLocation,
+						path:
+							path.length === 1 ? `${path}${newLocation}` : `${path}/${newLocation}`,
+						files: [],
+						dirs: [],
+						size: 0,
+					});
 				}
 
 				return { directories, location: [...location, newLocation] };
@@ -1175,7 +1193,7 @@ const sumDirectories = (directories: string[], size: number) => {
 
 	const result = directories.reduce((acc, dir) => {
 		const currentDir: DirectoriesNoTree = arrayDirectories.find(
-			(directory) => directory.name === dir,
+			(directory) => directory.path === dir,
 		);
 
 		if (!currentDir) {
@@ -1193,15 +1211,20 @@ const treeDirectories = (directories: string[]) => {
 	}
 	const result = directories.reduce((newTree, dir) => {
 		const currentDir: DirectoriesNoTree = arrayDirectories.find(
-			(directory) => directory.name === dir,
+			(directory) => directory.path === dir,
 		);
 
+		const pathName = dir.split('/')[dir.split('/').length - 1];
+
 		if (!currentDir) {
-			return { ...newTree, [dir]: { files: [], dirs: [], size: 0 } };
+			return {
+				...newTree,
+				[pathName]: { files: [], dirs: [], size: 0 },
+			};
 		}
 
 		const result = {
-			[currentDir.name]: {
+			[pathName]: {
 				files: [...currentDir.files],
 				dirs: treeDirectories(currentDir.dirs),
 				size: sumDirectories(currentDir.dirs, currentDir.size),
@@ -1217,7 +1240,7 @@ const tree: Directory = {};
 tree[rootDir.name] = {
 	files: [...rootDir.files],
 	dirs: treeDirectories(rootDir.dirs),
-	size: sumDirectories(rootDir.dirs, rootDir.size),
+	size: 0,
 };
 
 console.log(tree['/']);

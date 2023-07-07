@@ -1,5 +1,4 @@
-module.exports = input = `
-30373
+module.exports = input = `30373
 25512
 65332
 33549

@@ -13,32 +13,52 @@ const returnC = (value) => {
 };
 
 teste.forEach((tes) => {
-
-	// const commandMap = (tes) => {
+	// const getCommandFunction = () => {
 	// 	if (tes === 'a') {
-	// 		return returnA
+	// 		return returnA;
 	// 	}
 	// 	if (tes === 'b') {
-	// 		return returnB
+	// 		return returnB;
 	// 	}
 	// 	if (tes === 'c') {
-	// 		return returnC
+	// 		return returnC;
 	// 	}
-	// }
-	
+	// };
+	// const command = getCommandFunction();
+
 	// const commandMap = [
 	// 	{ test: 'a', function: returnA },
 	// 	{ test: 'b', function: returnB },
 	// 	{ test: 'c', function: returnC },
 	// ];
 
-	// const commandMap = {
+	// const command = commandMap.find(({ test }) => test === tes).function;
+
+	// const getCommandFunction = {
 	// 	a: returnA,
 	// 	b: returnB,
 	// 	c: returnC,
 	// };
 
-	const command = commandMap(tes);
+	// const command = getCommandFunction[tes];
+
+	// let getCommandFunction = () => {
+	// 	let getCommandFunction = () => {};
+	// 	switch (tes) {
+	// 		case 'a':
+	// 			getCommandFunction = returnA;
+	// 			break;
+	// 		case 'b':
+	// 			getCommandFunction = returnB;
+	// 			break;
+	// 		case 'c':
+	// 			getCommandFunction = returnC;
+	// 			break;
+	// 	}
+	// 	return getCommandFunction;
+	// };
+
+	// const command = getCommandFunction();
 
 	console.log(command(tes));
 });
